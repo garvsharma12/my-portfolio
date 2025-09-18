@@ -135,7 +135,7 @@ export const ContactSection = () => {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Pedro Machado..."
+                  placeholder="Narayan"
                   className="w-full px-4 py-3 rounded-md border border-input bg-background focus:outline-hidden focus:ring-2 focus:ring-primary"
                 />
               </Step>
