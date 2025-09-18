@@ -17,17 +17,35 @@ const ScrollFloat = ({
   scrollStart = 'center bottom+=50%',
   scrollEnd = 'bottom bottom-=40%',
   stagger = 0.03,
+  lineBreakBefore, // optional substring to start new line before
 }) => {
   const containerRef = useRef(null);
 
-  const splitText = useMemo(() => {
-    const text = typeof children === 'string' ? children : '';
-    return text.split('').map((char, index) => (
-      <span className="char" key={index}>
+  const renderChars = (text, keyPrefix = '') =>
+    text.split('').map((char, index) => (
+      <span className="char" key={`${keyPrefix}${index}`}>
         {char === ' ' ? '\u00A0' : char}
       </span>
     ));
-  }, [children]);
+
+  const splitText = useMemo(() => {
+    const text = typeof children === 'string' ? children : '';
+    if (lineBreakBefore && typeof lineBreakBefore === 'string') {
+      const idx = text.indexOf(lineBreakBefore);
+      if (idx > -1) {
+        const pre = text.slice(0, idx);
+        const post = text.slice(idx);
+        return (
+          <>
+            {renderChars(pre, 'pre-')}
+            <br />
+            {renderChars(post, 'post-')}
+          </>
+        );
+      }
+    }
+    return renderChars(text);
+  }, [children, lineBreakBefore]);
 
   useEffect(() => {
     const el = containerRef.current;

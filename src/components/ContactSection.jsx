@@ -1,34 +1,69 @@
-import {
-  Instagram,
-  Linkedin,
-  Mail,
-  MapPin,
-  Phone,
-  Send,
-  Twitch,
-  Twitter,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import ScrollFloat from "./ScrollFloat";
+import Stepper, { Step } from "./Stepper";
 
 export const ContactSection = () => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [currentStep, setCurrentStep] = useState(1);
+  const defaultRecipient = "garv.sharma1202@gmail.com";
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const submitMessage = async () => {
+    // Basic validation
+    const n = name.trim();
+    const e = email.trim();
+    const m = message.trim();
+    if (!n || !e || !m) {
+      toast({ title: "Please fill all fields", description: "Name, email, and message are required." });
+      return false;
+    }
+    const emailOk = /.+@.+\..+/.test(e);
+    if (!emailOk) {
+      toast({ title: "Invalid email", description: "Please enter a valid email address." });
+      return false;
+    }
 
-    setIsSubmitting(true);
+    const endpoint = import.meta.env.VITE_CONTACT_ENDPOINT || "/api/contact";
+    const subject = `New portfolio message from ${n}`;
 
-    setTimeout(() => {
+    try {
+      setIsSubmitting(true);
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ name: n, email: e, message: m, subject, to: defaultRecipient }),
+      });
+
+      if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
+
       toast({
         title: "Message sent!",
-        description: "Thank you for your message. I'll get back to you soon.",
+        description: "Thanks for reaching out — I'll get back to you soon.",
       });
+      // Reset fields
+      setName("");
+      setEmail("");
+      setMessage("");
+      return true;
+    } catch (err) {
+      // Fallback to mailto if backend fails
+      const body = `Name: ${encodeURIComponent(n)}%0D%0AEmail: ${encodeURIComponent(e)}%0D%0A%0D%0A${encodeURIComponent(m)}`;
+      window.location.href = `mailto:${defaultRecipient}?subject=${encodeURIComponent(subject)}&body=${body}`;
+      toast({
+        title: "Opening mail client…",
+        description: `If it doesn't open, email me at ${defaultRecipient}.`,
+      });
+      return true; // allow stepper to complete after falling back
+    } finally {
       setIsSubmitting(false);
-    }, 1500);
+    }
   };
   return (
     <section id="contact" className="py-24 px-4 relative bg-secondary/30">
@@ -52,145 +87,94 @@ export const ContactSection = () => {
           I'm always open to discussing new opportunities.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          <div className="space-y-8">
-            <h3 className="text-2xl font-semibold mb-6">
-              {" "}
-              Contact Information
-            </h3>
-
-            <div className="space-y-6 justify-center">
-              <div className="flex items-start space-x-4">
-                <div className="p-3 rounded-full bg-primary/10">
-                  <Mail className="h-6 w-6 text-primary" />{" "}
-                </div>
-                <div>
-                  <h4 className="font-medium"> Email</h4>
-                  <a
-                    href="mailto:hello@gmail.com"
-                    className="text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    hello@gmail.com
-                  </a>
-                </div>
-              </div>
-              <div className="flex items-start space-x-4">
-                <div className="p-3 rounded-full bg-primary/10">
-                  <Phone className="h-6 w-6 text-primary" />{" "}
-                </div>
-                <div>
-                  <h4 className="font-medium"> Phone</h4>
-                  <a
-                    href="tel:+11234567890"
-                    className="text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    +1 (123) 456-7890
-                  </a>
-                </div>
-              </div>
-              <div className="flex items-start space-x-4">
-                <div className="p-3 rounded-full bg-primary/10">
-                  <MapPin className="h-6 w-6 text-primary" />{" "}
-                </div>
-                <div>
-                  <h4 className="font-medium"> Location</h4>
-                  <a className="text-muted-foreground hover:text-primary transition-colors">
-                    Vancouver, BC, Canada
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-8">
-              <h4 className="font-medium mb-4"> Connect With Me</h4>
-              <div className="flex space-x-4 justify-center">
-                <a href="#" target="_blank">
-                  <Linkedin />
-                </a>
-                <a href="#" target="_blank">
-                  <Twitter />
-                </a>
-                <a href="#" target="_blank">
-                  <Instagram />
-                </a>
-                <a href="#" target="_blank">
-                  <Twitch />
-                </a>
-              </div>
-            </div>
-          </div>
-
-          <div
-            className="bg-card p-8 rounded-lg shadow-xs"
-            onSubmit={handleSubmit}
-          >
+        <div className="grid grid-cols-1 gap-12 max-w-2xl mx-auto">
+          <div className="bg-card p-8 rounded-lg shadow-xs overflow-hidden">
             <h3 className="text-2xl font-semibold mb-6"> Send a Message</h3>
-
-            <form className="space-y-6">
-              <div>
-                <label
-                  htmlFor="name"
-                  className="block text-sm font-medium mb-2"
-                >
-                  {" "}
-                  Your Name
-                </label>
+            <Stepper
+              initialStep={1}
+              onStepChange={(s) => setCurrentStep(s)}
+              onBeforeNext={(from) => {
+                if (from === 1) {
+                  const ok = name.trim().length > 0;
+                  if (!ok) toast({ title: "Name required", description: "Please enter your name to continue." });
+                  return ok;
+                }
+                if (from === 2) {
+                  const ok = /.+@.+\..+/.test(email.trim());
+                  if (!ok) toast({ title: "Valid email required", description: "Please enter a valid email." });
+                  return ok;
+                }
+                if (from === 3) {
+                  const ok = message.trim().length > 0;
+                  if (!ok) toast({ title: "Message required", description: "Please write a brief message." });
+                  return ok;
+                }
+                return true;
+              }}
+              onBeforeComplete={submitMessage}
+              nextButtonText={isSubmitting ? "Sending..." : "Next"}
+              nextButtonProps={{
+                disabled:
+                  isSubmitting ||
+                  (currentStep === 1 && name.trim().length === 0) ||
+                  (currentStep === 2 && !/.+@.+\..+/.test(email.trim())) ||
+                  (currentStep === 3 && message.trim().length === 0),
+              }}
+              backButtonProps={{ disabled: isSubmitting }}
+              completeButtonText={isSubmitting ? "Sending..." : "Complete"}
+              compact
+              disableStepIndicators
+            >
+              <Step>
+                <h4 className="text-xl font-semibold mb-2">Your Name</h4>
+                <p className="text-sm text-muted-foreground mb-4">How should I address you?</p>
                 <input
                   type="text"
-                  id="name"
-                  name="name"
-                  required
-                  className="w-full px-4 py-3 rounded-md border border-input bg-background focus:outline-hidden foucs:ring-2 focus:ring-primary"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                   placeholder="Pedro Machado..."
+                  className="w-full px-4 py-3 rounded-md border border-input bg-background focus:outline-hidden focus:ring-2 focus:ring-primary"
                 />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium mb-2"
-                >
-                  {" "}
-                  Your Email
-                </label>
+              </Step>
+              <Step>
+                <h4 className="text-xl font-semibold mb-2">Your Email</h4>
+                <p className="text-sm text-muted-foreground mb-4">Where can I reply?</p>
                 <input
                   type="email"
-                  id="email"
-                  name="email"
-                  required
-                  className="w-full px-4 py-3 rounded-md border border-input bg-background focus:outline-hidden foucs:ring-2 focus:ring-primary"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="john@gmail.com"
+                  className="w-full px-4 py-3 rounded-md border border-input bg-background focus:outline-hidden focus:ring-2 focus:ring-primary"
                 />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="message"
-                  className="block text-sm font-medium mb-2"
-                >
-                  {" "}
-                  Your Message
-                </label>
+              </Step>
+              <Step>
+                <h4 className="text-xl font-semibold mb-2">Your Message</h4>
+                <p className="text-sm text-muted-foreground mb-4">What would you like to talk about?</p>
                 <textarea
-                  id="message"
-                  name="message"
-                  required
-                  className="w-full px-4 py-3 rounded-md border border-input bg-background focus:outline-hidden foucs:ring-2 focus:ring-primary resize-none"
+                  rows={6}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
                   placeholder="Hello, I'd like to talk about..."
+                  className="w-full px-4 py-3 rounded-md border border-input bg-background focus:outline-hidden focus:ring-2 focus:ring-primary resize-none"
                 />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className={cn(
-                  "cosmic-button w-full flex items-center justify-center gap-2"
-                )}
-              >
-                {isSubmitting ? "Sending..." : "Send Message"}
-                <Send size={16} />
-              </button>
-            </form>
+              </Step>
+              <Step>
+                <h4 className="text-xl font-semibold mb-3">Review & Send</h4>
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Name:</span> {name || "—"}
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Email:</span> {email || "—"}
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Message:</span>
+                    <div className="mt-1 whitespace-pre-line bg-background border border-input rounded-md p-3">{message || "—"}</div>
+                  </div>
+                  <p className="text-muted-foreground pt-2">Press <span className="font-medium">Complete</span> to send your message.</p>
+                </div>
+              </Step>
+            </Stepper>
           </div>
         </div>
       </div>

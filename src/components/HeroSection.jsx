@@ -19,6 +19,7 @@ export const HeroSection = () => {
               stagger={0.03}
               containerClassName="!leading-tight"
               textClassName="text-gradient"
+              lineBreakBefore="Sharma"
             >
               Hi, I'm Garv Sharma
             </ScrollFloat>
