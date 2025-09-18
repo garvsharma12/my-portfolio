@@ -26,10 +26,8 @@ export const HeroSection = () => {
             </ScrollFloat>
           </div>
 
-          <p className="text-lg md:text-xl text-muted-foreground max-2-2xl mx-auto opacity-0 animate-fade-in-delay-3">
-            I create stellar web experiences with modern technologies.
-            Specializing in front-end development, I build interfaces that are
-            both beautiful and functional.
+          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl leading-relaxed mx-auto opacity-0 animate-fade-in-delay-3">
+            I build scalable web applications with modern technologies. Specializing in full-stack development, I craft solutions that are robust, efficient, and user-focused, while staying eager to learn and adapt to new technologies.
           </p>
 
           <div className="pt-4 opacity-0 animate-fade-in-delay-4">

@@ -82,7 +82,8 @@ const ScrollFloat = ({
           scroller,
           start: scrollStart,
           end: scrollEnd,
-          scrub: true
+          scrub: true,
+          invalidateOnRefresh: true
         }
       }
     );
