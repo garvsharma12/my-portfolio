@@ -1,5 +1,6 @@
 import { ArrowDown } from "lucide-react";
 import ScrollFloat from "./ScrollFloat";
+import Magnet from "./Magnet";
 
 export const HeroSection = () => {
   return (
@@ -32,16 +33,24 @@ export const HeroSection = () => {
           </p>
 
           <div className="pt-4 opacity-0 animate-fade-in-delay-4">
-            <a href="#projects" className="cosmic-button">
-              View My Work
+            <a href="#projects" className="cosmic-button px-7 py-3 text-base">
+              <Magnet padding={50} magnetStrength={50}>
+                <span>View My Work</span>
+              </Magnet>
             </a>
           </div>
         </div>
       </div>
 
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center animate-bounce">
-        <span className="text-sm text-muted-foreground mb-2"> Scroll </span>
-        <ArrowDown className="h-5 w-5 text-primary" />
+  <div className="absolute bottom-2 md:bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+        <span className="text-base md:text-lg text-muted-foreground">Scroll Down</span>
+        <a
+          href="#about"
+          aria-label="Scroll down to About section"
+          className="inline-flex items-center justify-center rounded-full border border-white/10 bg-background/40 px-4 py-4 md:px-5 md:py-5 backdrop-blur-md transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:bg-background/60 hover:shadow-[0_8px_30px_rgba(139,92,246,0.15)] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 animate-bounce"
+        >
+          <ArrowDown className="h-6 w-6 md:h-7 md:w-7 text-primary" />
+        </a>
       </div>
     </section>
   );

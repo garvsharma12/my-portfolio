@@ -52,10 +52,13 @@ export const ContactSection = () => {
       setEmail("");
       setMessage("");
       return true;
-    } catch (err) {
+    } catch (_err) {
       // Fallback to mailto if backend fails
       const body = `Name: ${encodeURIComponent(n)}%0D%0AEmail: ${encodeURIComponent(e)}%0D%0A%0D%0A${encodeURIComponent(m)}`;
       window.location.href = `mailto:${defaultRecipient}?subject=${encodeURIComponent(subject)}&body=${body}`;
+      if (import.meta.env?.DEV) {
+        console.warn('Contact submit failed, using mailto fallback:', _err);
+      }
       toast({
         title: "Opening mail client…",
         description: `If it doesn't open, email me at ${defaultRecipient}.`,

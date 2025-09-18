@@ -127,9 +127,16 @@
 }
 
 @utility cosmic-button {
-  @apply px-6 py-2 rounded-full bg-primary text-primary-foreground font-medium 
-         transition-all duration-300 hover:shadow-[0_0_10px_rgba(139,92,246,0.5)]
-         hover:scale-105 active:scale-95;
+  /* Modern pill CTA: glassy, gradient, roomy, with motion and focus ring */
+  @apply inline-flex items-center gap-2 rounded-full border border-white/10 
+         px-6 py-2 md:px-7 md:py-3 text-sm md:text-base font-medium 
+         text-primary-foreground backdrop-blur-md transition-all duration-300 
+         focus:outline-hidden focus:ring-2 focus:ring-primary/60 focus:ring-offset-2 focus:ring-offset-background 
+         hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(139,92,246,0.20)] active:translate-y-0;
+  background: linear-gradient(135deg,
+    hsl(var(--primary)) 0%,
+    color-mix(in hsl, hsl(var(--primary)), white 12%) 100%
+  );
 }
 
 @utility star {
@@ -164,4 +171,13 @@
   margin: 0 auto;
   padding: 0;
   text-align: center;
+}
+
+/* Utility: Hide scrollbars but keep scrolling (cross-browser) */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }

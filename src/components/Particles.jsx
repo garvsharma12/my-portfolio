@@ -107,136 +107,152 @@ const Particles = ({
     const container = containerRef.current;
     if (!container) return;
 
-    const renderer = new Renderer({ depth: false, alpha: true, antialias: true });
-    const gl = renderer.gl;
-    container.appendChild(gl.canvas);
-    gl.clearColor(0, 0, 0, 0);
+    let cleanup = () => {};
+    try {
+      const renderer = new Renderer({ depth: false, alpha: true, antialias: true });
+      const gl = renderer.gl;
+      container.appendChild(gl.canvas);
+      gl.clearColor(0, 0, 0, 0);
 
-    // Ensure canvas fills the container
-    Object.assign(gl.canvas.style, {
-      position: 'absolute',
-      inset: 0,
-      width: '100%',
-      height: '100%',
-      pointerEvents: 'none'
-    });
+      // Ensure canvas fills the container
+      Object.assign(gl.canvas.style, {
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none'
+      });
 
-    // Improve crispness
-    renderer.dpr = Math.min(window.devicePixelRatio || 1, 2);
+      // Improve crispness
+      renderer.dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-    const camera = new Camera(gl, { fov: 15 });
-    camera.position.set(0, 0, cameraDistance);
+      const camera = new Camera(gl, { fov: 15 });
+      camera.position.set(0, 0, cameraDistance);
 
-    const resize = () => {
-      let width = container.clientWidth;
-      let height = container.clientHeight;
-      // Fallback if container hasn't been laid out yet
-      if (!width || !height) {
-        width = window.innerWidth;
-        height = window.innerHeight;
+      const resize = () => {
+        let width = container.clientWidth;
+        let height = container.clientHeight;
+        // Fallback if container hasn't been laid out yet
+        if (!width || !height) {
+          width = window.innerWidth;
+          height = window.innerHeight;
+        }
+        renderer.setSize(width, height);
+        camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+      };
+      window.addEventListener('resize', resize, false);
+      resize();
+
+      const handleMouseMove = (e) => {
+        const rect = container.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        const y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
+        mouseRef.current = { x, y };
+      };
+
+      if (moveParticlesOnHover) {
+        // Listen on window so we can allow pointer-events: none on the canvas wrapper
+        window.addEventListener('mousemove', handleMouseMove);
       }
-      renderer.setSize(width, height);
-      camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
-    };
-    window.addEventListener('resize', resize, false);
-    resize();
 
-    const handleMouseMove = (e) => {
-      const rect = container.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      const y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
-      mouseRef.current = { x, y };
-    };
+      const count = particleCount;
+      const positions = new Float32Array(count * 3);
+      const randoms = new Float32Array(count * 4);
+      const colors = new Float32Array(count * 3);
+      const palette = particleColors && particleColors.length > 0 ? particleColors : defaultColors;
 
-    if (moveParticlesOnHover) {
-      // Listen on window so we can allow pointer-events: none on the canvas wrapper
-      window.addEventListener('mousemove', handleMouseMove);
-    }
+      for (let i = 0; i < count; i++) {
+        let x, y, z, len;
+        do {
+          x = Math.random() * 2 - 1;
+          y = Math.random() * 2 - 1;
+          z = Math.random() * 2 - 1;
+          len = x * x + y * y + z * z;
+        } while (len > 1 || len === 0);
+        const r = Math.cbrt(Math.random());
+        positions.set([x * r, y * r, z * r], i * 3);
+        randoms.set([Math.random(), Math.random(), Math.random(), Math.random()], i * 4);
+        const col = hexToRgb(palette[Math.floor(Math.random() * palette.length)]);
+        colors.set(col, i * 3);
+      }
 
-    const count = particleCount;
-    const positions = new Float32Array(count * 3);
-    const randoms = new Float32Array(count * 4);
-    const colors = new Float32Array(count * 3);
-    const palette = particleColors && particleColors.length > 0 ? particleColors : defaultColors;
+      const geometry = new Geometry(gl, {
+        position: { size: 3, data: positions },
+        random: { size: 4, data: randoms },
+        color: { size: 3, data: colors }
+      });
 
-    for (let i = 0; i < count; i++) {
-      let x, y, z, len;
-      do {
-        x = Math.random() * 2 - 1;
-        y = Math.random() * 2 - 1;
-        z = Math.random() * 2 - 1;
-        len = x * x + y * y + z * z;
-      } while (len > 1 || len === 0);
-      const r = Math.cbrt(Math.random());
-      positions.set([x * r, y * r, z * r], i * 3);
-      randoms.set([Math.random(), Math.random(), Math.random(), Math.random()], i * 4);
-      const col = hexToRgb(palette[Math.floor(Math.random() * palette.length)]);
-      colors.set(col, i * 3);
-    }
+      const program = new Program(gl, {
+        vertex,
+        fragment,
+        uniforms: {
+          uTime: { value: 0 },
+          uSpread: { value: particleSpread },
+          uBaseSize: { value: particleBaseSize },
+          uSizeRandomness: { value: sizeRandomness },
+          uAlphaParticles: { value: alphaParticles ? 1 : 0 }
+        },
+        transparent: true,
+        depthTest: false
+      });
 
-    const geometry = new Geometry(gl, {
-      position: { size: 3, data: positions },
-      random: { size: 4, data: randoms },
-      color: { size: 3, data: colors }
-    });
+      const particles = new Mesh(gl, { mode: gl.POINTS, geometry, program });
 
-    const program = new Program(gl, {
-      vertex,
-      fragment,
-      uniforms: {
-        uTime: { value: 0 },
-        uSpread: { value: particleSpread },
-        uBaseSize: { value: particleBaseSize },
-        uSizeRandomness: { value: sizeRandomness },
-        uAlphaParticles: { value: alphaParticles ? 1 : 0 }
-      },
-      transparent: true,
-      depthTest: false
-    });
+      let animationFrameId;
+      let lastTime = performance.now();
+      let elapsed = 0;
 
-    const particles = new Mesh(gl, { mode: gl.POINTS, geometry, program });
+      const update = (t) => {
+        animationFrameId = requestAnimationFrame(update);
+        const delta = t - lastTime;
+        lastTime = t;
+        elapsed += delta * speed;
 
-    let animationFrameId;
-    let lastTime = performance.now();
-    let elapsed = 0;
+        program.uniforms.uTime.value = elapsed * 0.001;
 
-    const update = (t) => {
+        if (moveParticlesOnHover) {
+          particles.position.x = -mouseRef.current.x * particleHoverFactor;
+          particles.position.y = -mouseRef.current.y * particleHoverFactor;
+        } else {
+          particles.position.x = 0;
+          particles.position.y = 0;
+        }
+
+        if (!disableRotation) {
+          particles.rotation.x = Math.sin(elapsed * 0.0002) * 0.1;
+          particles.rotation.y = Math.cos(elapsed * 0.0005) * 0.15;
+          particles.rotation.z += 0.01 * speed;
+        }
+
+        renderer.render({ scene: particles, camera });
+      };
+
       animationFrameId = requestAnimationFrame(update);
-      const delta = t - lastTime;
-      lastTime = t;
-      elapsed += delta * speed;
 
-      program.uniforms.uTime.value = elapsed * 0.001;
-
-      if (moveParticlesOnHover) {
-        particles.position.x = -mouseRef.current.x * particleHoverFactor;
-        particles.position.y = -mouseRef.current.y * particleHoverFactor;
-      } else {
-        particles.position.x = 0;
-        particles.position.y = 0;
+      cleanup = () => {
+        window.removeEventListener('resize', resize);
+        if (moveParticlesOnHover) {
+          window.removeEventListener('mousemove', handleMouseMove);
+        }
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        try {
+          if (container.contains(gl.canvas)) {
+            container.removeChild(gl.canvas);
+          }
+        } catch {
+          // ignore detach errors during unmount
+          void 0;
+        }
+      };
+    } catch (err) {
+      // Gracefully degrade if WebGL init fails
+      if (import.meta.env?.DEV) {
+        console.warn('Particles init failed:', err);
       }
+      cleanup = () => {};
+    }
 
-      if (!disableRotation) {
-        particles.rotation.x = Math.sin(elapsed * 0.0002) * 0.1;
-        particles.rotation.y = Math.cos(elapsed * 0.0005) * 0.15;
-        particles.rotation.z += 0.01 * speed;
-      }
-
-      renderer.render({ scene: particles, camera });
-    };
-
-    animationFrameId = requestAnimationFrame(update);
-
-    return () => {
-      window.removeEventListener('resize', resize);
-      if (moveParticlesOnHover) {
-        window.removeEventListener('mousemove', handleMouseMove);
-      }
-      cancelAnimationFrame(animationFrameId);
-      if (container.contains(gl.canvas)) {
-        container.removeChild(gl.canvas);
-      }
-    };
+    return () => cleanup();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     particleCount,

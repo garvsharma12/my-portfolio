@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import Magnet from "./Magnet";
 
 const navItems = [
   { name: "Home", href: "#hero" },
@@ -60,7 +61,9 @@ export const Navbar = () => {
           className="md:hidden p-2 text-foreground z-50"
           aria-label={isMenuOpen ? "Close Menu" : "Open Menu"}
         >
-          {isMenuOpen ? <X size={24} /> : <Menu size={24} />}{" "}
+          <Magnet padding={50} magnetStrength={50}>
+            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </Magnet>{" "}
         </button>
 
         <div

@@ -1,7 +1,8 @@
 import React, { useState, Children, useRef, useLayoutEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion as Motion, AnimatePresence } from 'motion/react';
 
 import './Stepper.css';
+import Magnet from './Magnet';
 
 export default function Stepper({
   children,
@@ -121,11 +122,15 @@ export default function Stepper({
                   className={`back-button ${currentStep === 1 ? 'inactive' : ''}`}
                   {...backButtonProps}
                 >
-                  {backButtonText}
+                  <Magnet padding={50} magnetStrength={50}>
+                    <span>{backButtonText}</span>
+                  </Magnet>
                 </button>
               )}
               <button onClick={isLastStep ? handleComplete : handleNext} className="next-button" {...nextButtonProps}>
-                {isLastStep ? completeButtonText : nextButtonText}
+                <Magnet padding={50} magnetStrength={50}>
+                  <span>{isLastStep ? completeButtonText : nextButtonText}</span>
+                </Magnet>
               </button>
             </div>
           </div>
@@ -139,7 +144,7 @@ function StepContentWrapper({ isCompleted, currentStep, direction, children, cla
   const [parentHeight, setParentHeight] = useState(0);
 
   return (
-    <motion.div
+    <Motion.div
       className={className}
       style={{ position: 'relative', overflow: 'hidden' }}
       animate={{ height: isCompleted ? 0 : parentHeight }}
@@ -152,7 +157,7 @@ function StepContentWrapper({ isCompleted, currentStep, direction, children, cla
           </SlideTransition>
         )}
       </AnimatePresence>
-    </motion.div>
+    </Motion.div>
   );
 }
 
@@ -164,7 +169,7 @@ function SlideTransition({ children, direction, onHeightReady }) {
   }, [children, onHeightReady]);
 
   return (
-    <motion.div
+    <Motion.div
       ref={containerRef}
       custom={direction}
       variants={stepVariants}
@@ -175,7 +180,7 @@ function SlideTransition({ children, direction, onHeightReady }) {
       style={{ position: 'absolute', left: 0, right: 0, top: 0 }}
     >
       {children}
-    </motion.div>
+    </Motion.div>
   );
 }
 
@@ -206,8 +211,8 @@ function StepIndicator({ step, currentStep, onClickStep, disableStepIndicators }
   };
 
   return (
-    <motion.div onClick={handleClick} className="step-indicator" animate={status} initial={false}>
-      <motion.div
+    <Motion.div onClick={handleClick} className="step-indicator" animate={status} initial={false}>
+      <Motion.div
         variants={{
           inactive: { scale: 1, backgroundColor: '#222', color: '#a3a3a3' },
           active: { scale: 1, backgroundColor: '#5227FF', color: '#5227FF' },
@@ -223,8 +228,8 @@ function StepIndicator({ step, currentStep, onClickStep, disableStepIndicators }
         ) : (
           <span className="step-number">{step}</span>
         )}
-      </motion.div>
-    </motion.div>
+      </Motion.div>
+    </Motion.div>
   );
 }
 
@@ -236,7 +241,7 @@ function StepConnector({ isComplete }) {
 
   return (
     <div className="step-connector">
-      <motion.div
+      <Motion.div
         className="step-connector-inner"
         variants={lineVariants}
         initial={false}
@@ -250,7 +255,7 @@ function StepConnector({ isComplete }) {
 function CheckIcon(props) {
   return (
     <svg {...props} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-      <motion.path
+      <Motion.path
         initial={{ pathLength: 0 }}
         animate={{ pathLength: 1 }}
         transition={{ delay: 0.1, type: 'tween', ease: 'easeOut', duration: 0.3 }}

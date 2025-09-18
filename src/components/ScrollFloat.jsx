@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -29,7 +29,11 @@ const ScrollFloat = ({
     ));
 
   const splitText = useMemo(() => {
-    const text = typeof children === 'string' ? children : '';
+    if (typeof children !== 'string') {
+      // If heading content is not a plain string, render it as-is (no char splitting)
+      return children;
+    }
+    const text = children;
     if (lineBreakBefore && typeof lineBreakBefore === 'string') {
       const idx = text.indexOf(lineBreakBefore);
       if (idx > -1) {
@@ -84,10 +88,10 @@ const ScrollFloat = ({
     );
   }, [scrollContainerRef, animationDuration, ease, scrollStart, scrollEnd, stagger]);
 
-  return (
-    <Tag ref={containerRef} className={`scroll-float ${containerClassName}`}>
-      <span className={`scroll-float-text ${textClassName}`}>{splitText}</span>
-    </Tag>
+  return React.createElement(
+    Tag,
+    { ref: containerRef, className: `scroll-float ${containerClassName}` },
+    React.createElement('span', { className: `scroll-float-text ${textClassName}` }, splitText)
   );
 };
 

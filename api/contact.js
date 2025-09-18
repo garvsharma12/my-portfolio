@@ -1,3 +1,5 @@
+/* eslint-env node */
+/* global process */
 // Vercel Serverless Function: Send contact form email via Resend
 // Requires env: RESEND_API_KEY (server-side), optional CONTACT_TO_EMAIL
 
