@@ -2,7 +2,7 @@ import { ArrowUp, Instagram, Linkedin, Twitch, Twitter } from "lucide-react";
 
 export const Footer = () => {
   return (
-    <footer className="py-6 px-4 bg-card border-t border-border mt-12">
+  <footer className="relative z-10 py-6 px-4 mt-12 bg-background/30 backdrop-blur-md border-t border-white/10">
       <div className="container mx-auto max-w-5xl">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground order-2 sm:order-1 text-center sm:text-left">
