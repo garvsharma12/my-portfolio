@@ -15,17 +15,17 @@ const projects = [
   },
   {
     id: 2,
-    title: "Orbit Analytics Dashboard",
+    title: "Book Glance",
     description:
-      "Interactive analytics dashboard with data visualization and filtering capabilities.",
-    image: "/projects/project2.png",
-    tags: ["TypeScript", "D3.js", "Next.js"],
-    demoUrl: "#",
-    githubUrl: "#",
+      "AI-powered book discovery app with bookshelf scanning, smart recommendations, and AI-generated summaries and ratings.",
+    image: "/projects/Project2.png",
+    tags: ["React", "TypeScript", "TailwindCSS", "Express.js", "Redis", "Gemini"],
+    demoUrl: "https://book-glance.vercel.app/",
+    githubUrl: "https://github.com/garvsharma12/Book-Glance",
   },
   {
     id: 3,
-    title: "E-commerce Platform",
+    title: "MailMind",
     description:
       "Full-featured e-commerce platform with user authentication and payment processing.",
     image: "/projects/project3.png",
@@ -39,6 +39,7 @@ export const ProjectsSection = () => {
   const scrollRef = useRef(null);
   const [canLeft, setCanLeft] = useState(false);
   const [canRight, setCanRight] = useState(false);
+  const autoState = useRef({ rafId: 0, direction: 1, paused: false, prevTs: 0, resumeTimer: 0 });
 
   const updateCanScroll = () => {
     const el = scrollRef.current;
@@ -54,22 +55,93 @@ export const ProjectsSection = () => {
     const onScroll = () => updateCanScroll();
     el.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onScroll);
+    // Update on content/layout changes
+    const ro = new ResizeObserver(() => updateCanScroll());
+    ro.observe(el);
+    const onLoad = () => updateCanScroll();
+    window.addEventListener('load', onLoad);
+
+    // Auto-scroll loop: gentle back-and-forth
+  const speedPxPerMs = 0.12; // ~120 px/sec for clearer motion
+    const animate = (ts) => {
+      const node = scrollRef.current;
+      if (!node) return; // unmounted
+
+      if (autoState.current.prevTs === 0) autoState.current.prevTs = ts;
+      const dt = Math.min(32, Math.max(0, ts - autoState.current.prevTs));
+      autoState.current.prevTs = ts;
+
+      const maxScroll = Math.max(0, node.scrollWidth - node.clientWidth);
+      if (!autoState.current.paused && maxScroll > 0) {
+        let next = node.scrollLeft + autoState.current.direction * (dt * speedPxPerMs);
+        if (next <= 0) {
+          next = 0;
+          autoState.current.direction = 1;
+        } else if (next >= maxScroll) {
+          next = maxScroll;
+          autoState.current.direction = -1;
+        }
+        node.scrollLeft = next;
+        updateCanScroll();
+      }
+
+      autoState.current.rafId = requestAnimationFrame(animate);
+    };
+
+    autoState.current.rafId = requestAnimationFrame(animate);
+
+    // Pause when user interacts (wheel/pointer), resume after inactivity
+    const pause = () => {
+      autoState.current.paused = true;
+      if (autoState.current.resumeTimer) clearTimeout(autoState.current.resumeTimer);
+    };
+    const scheduleResume = (delay = 1200) => {
+      if (autoState.current.resumeTimer) clearTimeout(autoState.current.resumeTimer);
+      autoState.current.resumeTimer = setTimeout(() => {
+        autoState.current.paused = false;
+        autoState.current.prevTs = 0; // reset to prevent jump
+      }, delay);
+    };
+
+    const onWheel = () => { pause(); scheduleResume(1500); };
+    const onPointerDown = () => { pause(); };
+    const onPointerUp = () => { scheduleResume(800); };
+
+    el.addEventListener('wheel', onWheel, { passive: true });
+    el.addEventListener('pointerdown', onPointerDown, { passive: true });
+    el.addEventListener('pointerup', onPointerUp, { passive: true });
+
     return () => {
       el.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
+  window.removeEventListener('resize', onScroll);
+  window.removeEventListener('load', onLoad);
+  ro.disconnect();
+      if (autoState.current.rafId) cancelAnimationFrame(autoState.current.rafId);
+      el.removeEventListener('wheel', onWheel);
+      el.removeEventListener('pointerdown', onPointerDown);
+      el.removeEventListener('pointerup', onPointerUp);
+      if (autoState.current.resumeTimer) clearTimeout(autoState.current.resumeTimer);
     };
   }, []);
 
   const scrollByAmount = (dir = 1) => {
     const el = scrollRef.current;
     if (!el) return;
+    // Pause auto-scroll to avoid fighting manual input
+    autoState.current.paused = true;
+    if (autoState.current.resumeTimer) clearTimeout(autoState.current.resumeTimer);
     const amount = Math.floor(el.clientWidth * 0.9) * dir;
     el.scrollBy({ left: amount, behavior: 'smooth' });
+    // Resume auto-scroll after a short delay
+    autoState.current.resumeTimer = setTimeout(() => {
+      autoState.current.paused = false;
+      autoState.current.prevTs = 0;
+    }, 800);
   };
 
   return (
     <section id="projects" className="py-24 px-4 relative">
-      <div className="container mx-auto max-w-5xl">
+      <div className="container mx-auto max-w-5xl relative z-10">
         <div className="mb-4 text-center">
           <ScrollFloat
             as="h2"
@@ -90,7 +162,7 @@ export const ProjectsSection = () => {
           crafted with attention to detail, performance, and user experience.
         </p>
 
-        <div className="relative">
+  <div className="relative z-10">
           {/* Left/Right gradient fades (optional aesthetic) */}
           <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-background to-transparent" />
           <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background to-transparent" />
@@ -99,7 +171,7 @@ export const ProjectsSection = () => {
           <button
             aria-label="Scroll left"
             onClick={() => scrollByAmount(-1)}
-            className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 rounded-full border border-white/10 bg-background/40 backdrop-blur-md p-2.5 md:p-3 shadow-sm hover:border-primary/40 hover:bg-background/60 hover:shadow-[0_8px_30px_rgba(139,92,246,0.15)] transition ${canLeft ? 'opacity-100' : 'opacity-40 cursor-not-allowed'}`}
+            className={`absolute left-0 top-1/2 -translate-y-1/2 z-20 rounded-full border border-white/10 bg-background/60 backdrop-blur-md p-2.5 md:p-3 shadow-sm hover:border-primary/40 hover:bg-background/70 hover:shadow-[0_8px_30px_rgba(139,92,246,0.2)] transition ${canLeft ? 'opacity-100' : 'opacity-40 cursor-not-allowed'}`}
             disabled={!canLeft}
           >
             <Magnet padding={40} disabled={!canLeft} magnetStrength={60}>
@@ -109,7 +181,7 @@ export const ProjectsSection = () => {
           <button
             aria-label="Scroll right"
             onClick={() => scrollByAmount(1)}
-            className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 rounded-full border border-white/10 bg-background/40 backdrop-blur-md p-2.5 md:p-3 shadow-sm hover:border-primary/40 hover:bg-background/60 hover:shadow-[0_8px_30px_rgba(139,92,246,0.15)] transition ${canRight ? 'opacity-100' : 'opacity-40 cursor-not-allowed'}`}
+            className={`absolute right-0 top-1/2 -translate-y-1/2 z-20 rounded-full border border-white/10 bg-background/60 backdrop-blur-md p-2.5 md:p-3 shadow-sm hover:border-primary/40 hover:bg-background/70 hover:shadow-[0_8px_30px_rgba(139,92,246,0.2)] transition ${canRight ? 'opacity-100' : 'opacity-40 cursor-not-allowed'}`}
             disabled={!canRight}
           >
             <Magnet padding={40} disabled={!canRight} magnetStrength={60}>
@@ -121,6 +193,8 @@ export const ProjectsSection = () => {
           <div
             ref={scrollRef}
             className="no-scrollbar overflow-x-auto overflow-y-hidden snap-x snap-mandatory flex gap-6 px-1 py-1"
+            onPointerEnter={() => { autoState.current.paused = true; }}
+            onPointerLeave={() => { autoState.current.paused = false; autoState.current.prevTs = 0; }}
           >
             {projects.map((project) => (
               <div
@@ -131,6 +205,10 @@ export const ProjectsSection = () => {
                   <img
                     src={project.image}
                     alt={project.title}
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = "/favicon.svg";
+                    }}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
                 </div>
