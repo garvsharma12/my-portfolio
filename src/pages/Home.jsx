@@ -1,5 +1,5 @@
 import { Navbar } from "../components/Navbar";
-import Galaxy from "@/components/Galaxy";
+import LetterGlitch from "@/components/LetterGlitch";
 import { HeroSection } from "../components/HeroSection";
 import { AboutSection } from "../components/AboutSection";
 import { SkillsSection } from "../components/SkillsSection";
@@ -11,9 +11,15 @@ import { Footer } from "../components/Footer";
 export const Home = () => {
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden relative">
-      {/* Global Galaxy Background */}
+      {/* Global LetterGlitch Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <Galaxy className="w-full h-full" />
+        <LetterGlitch
+          glitchSpeed={50}
+          centerVignette={true}
+          outerVignette={false}
+          smooth={true}
+          className="w-full h-full"
+        />
       </div>
 
       {/* Navbar */}

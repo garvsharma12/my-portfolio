@@ -187,6 +187,11 @@ export default function Galaxy({
   rotationSpeed = 0.1,
   autoCenterRepulsion = 0,
   transparent = true,
+  // Performance controls
+  maxFps = 45,
+  maxDpr = 1.5,
+  pauseWhenHidden = true,
+  respectReducedMotion = true,
   className = '',
   ...rest
 }) {
@@ -199,7 +204,17 @@ export default function Galaxy({
   useEffect(() => {
     if (!ctnDom.current) return;
     const ctn = ctnDom.current;
-    let renderer, gl, program, mesh, animateId;
+    let renderer, gl, program, mesh, animateId = null;
+    let lastFrameTime = 0;
+
+    // Respect reduced-motion preference
+    const prefersReducedMotion =
+      respectReducedMotion && typeof window !== 'undefined' && 'matchMedia' in window
+        ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        : false;
+    const effectiveDisableAnimation = disableAnimation || prefersReducedMotion;
+    const effectiveSpeed = prefersReducedMotion ? speed * 0.5 : speed;
+    const effectiveDensity = prefersReducedMotion ? density * 0.9 : density;
 
     try {
       renderer = new Renderer({
@@ -207,6 +222,12 @@ export default function Galaxy({
         premultipliedAlpha: false
       });
       gl = renderer.gl;
+
+      // Cap device pixel ratio to reduce GPU load
+      try {
+        const desiredDpr = Math.min(maxDpr, Math.max(1, window.devicePixelRatio || 1));
+        renderer.dpr = desiredDpr;
+      } catch {}
 
       if (transparent) {
         gl.enable(gl.BLEND);
@@ -242,9 +263,9 @@ export default function Galaxy({
           uFocal: { value: new Float32Array(focal) },
           uRotation: { value: new Float32Array(rotation) },
           uStarSpeed: { value: starSpeed },
-          uDensity: { value: density },
+          uDensity: { value: effectiveDensity },
           uHueShift: { value: hueShift },
-          uSpeed: { value: speed },
+          uSpeed: { value: effectiveSpeed },
           uMouse: {
             value: new Float32Array([smoothMousePos.current.x, smoothMousePos.current.y])
           },
@@ -263,8 +284,16 @@ export default function Galaxy({
       mesh = new Mesh(gl, { geometry, program });
 
       function update(t) {
+        // Throttle FPS
+        const minDelta = 1000 / Math.max(1, maxFps);
+        if (t - lastFrameTime < minDelta) {
+          animateId = requestAnimationFrame(update);
+          return;
+        }
+        lastFrameTime = t;
+
         animateId = requestAnimationFrame(update);
-        if (!disableAnimation) {
+        if (!effectiveDisableAnimation) {
           program.uniforms.uTime.value = t * 0.001;
           program.uniforms.uStarSpeed.value = (t * 0.001 * starSpeed) / 10.0;
         }
@@ -281,8 +310,32 @@ export default function Galaxy({
 
         renderer.render({ scene: mesh });
       }
-      animateId = requestAnimationFrame(update);
+      const start = () => {
+        if (animateId == null) {
+          lastFrameTime = 0;
+          animateId = requestAnimationFrame(update);
+        }
+      };
+      const stop = () => {
+        if (animateId != null) {
+          cancelAnimationFrame(animateId);
+          animateId = null;
+        }
+      };
+
+      start();
       ctn.appendChild(gl.canvas);
+
+      // Pause animation when tab is hidden (optional)
+      const onVisibility = () => {
+        if (!pauseWhenHidden) return;
+        if (document.hidden) {
+          stop();
+        } else {
+          start();
+        }
+      };
+      if (pauseWhenHidden) document.addEventListener('visibilitychange', onVisibility);
 
       function handleMouseMove(e) {
         const rect = ctn.getBoundingClientRect();
@@ -302,8 +355,10 @@ export default function Galaxy({
       }
 
       return () => {
-        if (animateId) cancelAnimationFrame(animateId);
+        // Cleanup raf and listeners
+        if (animateId != null) cancelAnimationFrame(animateId);
         window.removeEventListener('resize', resize);
+        if (pauseWhenHidden) document.removeEventListener('visibilitychange', onVisibility);
         if (mouseInteraction) {
           ctn.removeEventListener('mousemove', handleMouseMove);
           ctn.removeEventListener('mouseleave', handleMouseLeave);
