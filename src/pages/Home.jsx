@@ -1,5 +1,5 @@
 import { Navbar } from "../components/Navbar";
-import LetterGlitch from "@/components/LetterGlitch";
+import Particles from "@/components/Particles";
 import { HeroSection } from "../components/HeroSection";
 import { AboutSection } from "../components/AboutSection";
 import { SkillsSection } from "../components/SkillsSection";
@@ -11,13 +11,17 @@ import { Footer } from "../components/Footer";
 export const Home = () => {
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden relative">
-      {/* Global LetterGlitch Background */}
+      {/* Global Particles Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <LetterGlitch
-          glitchSpeed={50}
-          centerVignette={true}
-          outerVignette={false}
-          smooth={true}
+        <Particles
+          particleColors={["#ffffff", "#ffffff"]}
+          particleCount={200}
+          particleSpread={10}
+          speed={0.1}
+          particleBaseSize={100}
+          moveParticlesOnHover={true}
+          alphaParticles={false}
+          disableRotation={false}
           className="w-full h-full"
         />
       </div>
