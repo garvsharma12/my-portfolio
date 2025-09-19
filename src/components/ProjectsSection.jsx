@@ -199,7 +199,7 @@ export const ProjectsSection = () => {
             {projects.map((project) => (
               <div
                 key={project.id}
-                className="shrink-0 w-80 md:w-96 snap-start group bg-card rounded-lg overflow-hidden shadow-xs card-hover"
+                className="shrink-0 w-80 md:w-96 snap-start group rounded-lg overflow-hidden shadow-xs card-hover bg-background/30 backdrop-blur-md border border-white/10"
               >
                 <div className="h-48 overflow-hidden">
                   <img
